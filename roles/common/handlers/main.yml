@@ -7,7 +7,7 @@
 - name: "docker container is available"
   docker_container:
     name: "{{ container_name }}"
-    image: "plgr/ps_pabx_server"
+    image: "plgr/ps_pabx_listener"
     volumes: "{{ data_volume }}:/data"
     state: started
     recreate: yes
