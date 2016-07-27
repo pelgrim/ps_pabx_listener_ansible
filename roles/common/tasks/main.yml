@@ -41,7 +41,7 @@
 
 - name: "docker image is available"
   docker_image:
-    name: "plgr/ps_pabx_server"
+    name: "plgr/ps_pabx_listener"
     state: "present"
     force: yes
   notify:
