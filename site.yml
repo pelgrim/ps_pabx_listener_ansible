@@ -1,0 +1,8 @@
+---
+- hosts: ps_pabx_server
+  become: yes
+  roles:
+    - role: common
+  environment:
+    http_proxy: "{{ http_proxy }}"
+    https_proxy: "{{ https_proxy }}"

@@ -1,0 +1,16 @@
+---
+- name: "docker container data volume is available"
+  file:
+    path: "{{ data_volume }}"
+    state: directory
+
+- name: "docker container is available"
+  docker_container:
+    name: "{{ container_name }}"
+    image: "plgr/ps_pabx_server"
+    volumes: "{{ data_volume }}:/data"
+    state: started
+    recreate: yes
+    restart: yes
+    restart_policy: always
+    command: "ps_pabx -s {{ pspabx_host }} -u {{ pspabx_user }} -p {{ pspabx_pass }} -d /data"

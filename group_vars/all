@@ -1,0 +1,8 @@
+data_volume: FILL IT
+http_proxy:
+https_proxy:
+pspabx_host: FILL IT
+pspabx_user: FILL IT
+pspabx_pass: FILL IT
+container_name: pspabx1
+notification_email: "foo@example.com bar@example.com"

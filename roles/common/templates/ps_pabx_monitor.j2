@@ -1,0 +1,76 @@
+#!/bin/bash
+
+debug() {
+  local debug_msg=$1
+  if [ "$DEBUG" == true ]; then
+    echo "[DEBUG] $debug_msg" >&2
+  fi
+}
+
+current_output_filename() {
+  local file_suffix=$(expr `date +%H` / 12)
+  local file_prefix=$(date +%Y%m%d)
+  debug "current output filename is $file_prefix$file_suffix.txt"
+  echo "$file_prefix$file_suffix.txt"
+}
+
+current_output_file_not_found() {
+  local output_path="{{ data_volume }}/`current_output_filename`"
+  debug "looking for $output_path"
+  test ! -f $output_path
+}
+
+ps_pabx_container_is_running(){
+  debug "checking if {{ container_name }} is running"
+  docker ps | grep -q {{ container_name }}
+}
+
+restart_ps_pabx_container(){
+  debug "restarting {{ container_name }} container"
+  docker restart {{ container_name }}
+}
+
+start_ps_pabx_container(){
+  debug "starting {{ container_name }} container"
+  docker start {{ container_name }}
+}
+
+start_or_restart_ps_pabx_container() {
+  if ps_pabx_container_is_running; then
+    restart_ps_pabx_container
+  else
+    start_ps_pabx_container
+  fi
+}
+
+try_to_restart_ps_pabx_container() {
+  local tries=$1
+  local wait_before_next_try=$2
+  while [ $tries -gt 0 ]; do
+    debug "remaining tries: $tries"
+    start_or_restart_ps_pabx_container > /dev/null
+    sleep $wait_before_next_try
+    current_output_file_not_found || break
+    tries=$(expr $tries - 1)
+  done
+}
+
+send_warn_mail_to() {
+  local dst_mail=$1
+  debug "sending warn mail to $dst_mail"
+  echo "`current_output_filename` nao encontrado" | mail -s "erro listener" $dst_mail
+}
+
+fix_ps_pabx() {
+  debug "ps pabx is malfunctioning. fixing"
+  for email_address in {{ notification_email }}; do
+    send_warn_mail_to $email_address
+  done
+  try_to_restart_ps_pabx_container 5 10
+}
+
+main() {
+  current_output_file_not_found && fix_ps_pabx
+}
+
+main

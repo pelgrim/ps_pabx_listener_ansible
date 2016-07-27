@@ -1,0 +1,69 @@
+---
+# ensure docker-engine is installed
+- name: ensure apt-transport-https package is installed
+  apt:
+    name: apt-transport-https
+    state: latest
+
+- name: ensure ca-certificates package is installed
+  apt:
+    name: ca-certificates
+    state: latest
+
+- name: ensure docker repository GPG key is added
+  apt_key:
+    keyserver: p80.pool.sks-keyservers.net
+    id: "58118E89F3A912897C070ADBF76221572C52609D"
+    state: present
+
+- name: ensure docker repository is present
+  apt_repository:
+    repo: "deb https://apt.dockerproject.org/repo ubuntu-{{ ansible_distribution_release }} main"
+    state: present
+
+- name: install ubuntu trusty linux kernel image
+  apt:
+    name: linux-image-generic-lts-trusty
+    state: present
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_version == '12.04'
+
+- name: install ubuntu newer-than-trusty linux kernel image
+  apt:
+    name: linux-image-extra-{{ ansible_kernel }}
+    state: present
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_version > '12.04'
+
+- name: ensure docker-engine is installed
+  apt:
+    name: docker-engine
+    state: latest
+    update_cache: yes
+
+- name: "docker image is available"
+  docker_image:
+    name: "plgr/ps_pabx_server"
+    state: "present"
+    force: yes
+  notify:
+    - docker container data volume is available
+    - docker container is available
+
+# finally, upload and configure the monitor script
+- name: "ensure correct ps_pabx_monitor is in place"
+  template:
+    src: ps_pabx_monitor.j2
+    dest: /usr/local/sbin/ps_pabx_monitor
+    mode: 700
+    owner: root
+    group: root
+    backup: yes
+
+- name: "schedules ps_pabx_monitor to run every 2 hours from 8AM to 6PM"
+  cron:
+    name: 'ps_pabx_monitor'
+    cron_file: 'ps_pabx_monitor'
+    user: 'root'
+    minute: '0'
+    hour: '8-18/2'
+    weekday: 'mon-fri'
+    job: '/usr/local/sbin/ps_pabx_monitor'
